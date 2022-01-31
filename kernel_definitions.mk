@@ -50,7 +50,7 @@ TARGET_KERNEL_MAKE_ENV += YACC=$(SOURCE_ROOT)/prebuilts/build-tools/$(HOST_OS)-$
 
 BUILD_CONFIG := $(TARGET_KERNEL_SOURCE)/build.config.common
 CLANG_VERSION := $(shell IFS="/"; while read LINE; do if [[ $$LINE == *"CLANG_PREBUILT_BIN"* ]]; then read -ra CLANG <<< "$$LINE"; for VERSION in "$${CLANG[@]}"; do if [[ $$VERSION == *"clang-"* ]]; then echo "$$VERSION"; fi; done; fi; done < $(BUILD_CONFIG))
-KERNEL_LLVM_BIN := $(lastword $(sort $(wildcard $(SOURCE_ROOT)/$(LLVM_PREBUILTS_BASE)/$(BUILD_OS)-x86/clang-4*)))/bin/clang
+KERNEL_LLVM_BIN := $(lastword $(sort $(wildcard $(SOURCE_ROOT)/$(LLVM_PREBUILTS_BASE)/$(BUILD_OS)-x86/clang-4*)))/bin
 KERNEL_AOSP_LLVM_BIN := $(SOURCE_ROOT)/$(LLVM_PREBUILTS_BASE)/$(BUILD_OS)-x86/$(CLANG_VERSION)/bin
 KERNEL_AOSP_LLVM_CLANG := $(KERNEL_AOSP_LLVM_BIN)/clang
 USE_KERNEL_AOSP_LLVM := $(shell test -f "$(KERNEL_AOSP_LLVM_CLANG)" && echo "true" || echo "false")
@@ -107,25 +107,22 @@ real_cc :=
 ifeq ($(KERNEL_LLVM_SUPPORT),true)
   ifeq ($(KERNEL_SD_LLVM_SUPPORT), true)  #Using sd-llvm compiler
     ifeq ($(shell echo $(SDCLANG_PATH) | head -c 1),/)
-       KERNEL_LLVM_BIN := $(SDCLANG_PATH)/clang
+       KERNEL_LLVM_BIN := $(SDCLANG_PATH)
     else
-       KERNEL_LLVM_BIN := $(shell pwd)/$(SDCLANG_PATH)/clang
+       KERNEL_LLVM_BIN := $(shell pwd)/$(SDCLANG_PATH)
     endif
-    $(warning "Using sdllvm" $(KERNEL_LLVM_BIN))
-  cc := CC=$(KERNEL_LLVM_BIN)
-  real_cc := REAL_CC=$(KERNEL_LLVM_BIN) CLANG_TRIPLE=aarch64-linux-gnu-
+    $(warning "Using sdllvm" $(KERNEL_LLVM_BIN)/clang)
   else
     ifeq ($(USE_KERNEL_AOSP_LLVM), true)  #Using kernel aosp-llvm compiler
-       KERNEL_LLVM_BIN := $(KERNEL_AOSP_LLVM_CLANG)
+       KERNEL_LLVM_BIN := $(KERNEL_AOSP_LLVM_BIN)
        $(warning "Using latest kernel aosp llvm" $(KERNEL_LLVM_BIN))
     else #Using platform aosp-llvm binaries
-       KERNEL_LLVM_BIN := $(shell pwd)/$(CLANG)
-       KERNEL_AOSP_LLVM_BIN := $(shell pwd)/$(shell (dirname $(CLANG)))
-       $(warning "Not using latest aosp-llvm" $(KERNEL_LLVM_BIN))
+       KERNEL_LLVM_BIN := $(shell pwd)/$(shell (dirname $(CLANG)))
+       $(warning "Not using latest aosp-llvm" $(KERNEL_LLVM_BIN)/clang)
     endif
-  cc := CC=$(KERNEL_LLVM_BIN)
-  real_cc := REAL_CC=$(KERNEL_LLVM_BIN) CLANG_TRIPLE=aarch64-linux-gnu- AR=$(KERNEL_AOSP_LLVM_BIN)/llvm-ar LLVM_NM=$(KERNEL_AOSP_LLVM_BIN)/llvm-nm LD=$(KERNEL_AOSP_LLVM_BIN)/ld.lld NM=$(KERNEL_AOSP_LLVM_BIN)/llvm-nm
   endif
+  cc := CC=clang
+  real_cc := PATH=$(KERNEL_LLVM_BIN):$$PATH REAL_CC=clang CLANG_TRIPLE=aarch64-linux-gnu- AR=llvm-ar LD=ld.lld NM=llvm-nm LLVM=1 LLVM_IAS=1
 else
 ifeq ($(strip $(KERNEL_GCC_NOANDROID_CHK)),0)
 KERNEL_CFLAGS := KCFLAGS=-mno-android
