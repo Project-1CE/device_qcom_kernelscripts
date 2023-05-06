@@ -89,11 +89,12 @@ KERNEL_CONFIG_OVERRIDE := CONFIG_ANDROID_BINDER_IPC_32BIT=y
 endif
 endif
 
-TARGET_KERNEL_CROSS_COMPILE_PREFIX := $(strip $(TARGET_KERNEL_CROSS_COMPILE_PREFIX))
-ifeq ($(TARGET_KERNEL_CROSS_COMPILE_PREFIX),)
-KERNEL_CROSS_COMPILE := arm-eabi-
+ifeq ($(KERNEL_NEW_GCC_SUPPORT),true)
+KERNEL_CROSS_COMPILE := aarch64-none-linux-gnu-
+KERNEL_CROSS_COMPILE_ARM32 := arm-none-eabi-
 else
-KERNEL_CROSS_COMPILE := $(shell pwd)/$(TARGET_TOOLS_PREFIX)
+KERNEL_CROSS_COMPILE := aarch64-linux-gnu-
+KERNEL_CROSS_COMPILE_ARM32 := arm-linux-gnueabi-
 endif
 
 ifeq ($(TARGET_PREBUILT_KERNEL),)
@@ -107,7 +108,12 @@ CLANG_ARCH := arm-linux-gnueabi-
 endif
 
 cc_args :=
-ifeq ($(KERNEL_LLVM_SUPPORT),true)
+ifeq ($(KERNEL_NEW_GCC_SUPPORT), true)  #Using gcc compiler
+  KERNEL_ARM64_GCC_BIN := $(SOURCE_ROOT)/prebuilts/gcc/$(BUILD_OS)-x86/aarch64/aarch64-none-linux-gnu/bin
+  KERNEL_ARM32_GCC_BIN := $(SOURCE_ROOT)/prebuilts/gcc/$(BUILD_OS)-x86/arm/arm-none-eabi/bin
+  $(warning "Using latest gcc" $(KERNEL_ARM64_GCC_BIN)/gcc)
+  cc_args := PATH=$(KERNEL_ARM64_GCC_BIN):$(KERNEL_ARM32_GCC_BIN):$$PATH
+else ifeq ($(KERNEL_LLVM_SUPPORT),true)
   ifeq ($(KERNEL_SD_LLVM_SUPPORT), true)  #Using sd-llvm compiler
     ifeq ($(shell echo $(SDCLANG_PATH) | head -c 1),/)
        KERNEL_LLVM_BIN := $(SDCLANG_PATH)
@@ -124,7 +130,7 @@ ifeq ($(KERNEL_LLVM_SUPPORT),true)
        $(warning "Not using latest aosp-llvm" $(KERNEL_LLVM_BIN)/clang)
     endif
   endif
-  cc_args := PATH=$(KERNEL_LLVM_BIN):$$PATH CC=clang REAL_CC=clang CLANG_TRIPLE=$(CLANG_ARCH) AR=llvm-ar LD=ld.lld NM=llvm-nm LLVM=1 LLVM_IAS=1
+  cc_args := PATH=$(KERNEL_LLVM_BIN):$$PATH CC=clang REAL_CC=clang CLANG_TRIPLE=$(CLANG_ARCH) AR=llvm-ar LD=ld.lld NM=llvm-nm OBJCOPY=llvm-objcopy LLVM=1 LLVM_IAS=1
 else
 ifeq ($(strip $(KERNEL_GCC_NOANDROID_CHK)),0)
 KERNEL_CFLAGS := KCFLAGS=-mno-android
@@ -278,7 +284,8 @@ define build-kernel
 	MAKE_PATH=$(MAKE_PATH)\
 	ARCH=$(KERNEL_ARCH) \
 	CROSS_COMPILE=$(KERNEL_CROSS_COMPILE) \
-	CROSS_COMPILE_ARM32=$(TARGET_KERNEL_CROSS_COMPILE_ARM32_PREFIX) \
+	CROSS_COMPILE_ARM32=$(KERNEL_CROSS_COMPILE_ARM32) \
+	CROSS_COMPILE_COMPAT=$(KERNEL_CROSS_COMPILE_ARM32) \
 	KERNEL_MODULES_OUT=$(3) \
 	KERNEL_HEADERS_INSTALL=$(4) \
 	HEADERS_INSTALL=$(5) \
