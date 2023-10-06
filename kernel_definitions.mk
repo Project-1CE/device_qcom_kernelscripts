@@ -49,6 +49,8 @@ TARGET_KERNEL_MAKE_ENV += DEPMOD=$(SOURCE_ROOT)/$(HOST_OUT_EXECUTABLES)/depmod
 TARGET_KERNEL_MAKE_ENV += LEX=$(SOURCE_ROOT)/prebuilts/build-tools/$(HOST_OS)-$(HOST_2ND_ARCH)/bin/flex
 TARGET_KERNEL_MAKE_ENV += M4=$(SOURCE_ROOT)/prebuilts/build-tools/$(HOST_OS)-$(HOST_2ND_ARCH)/bin/m4
 TARGET_KERNEL_MAKE_ENV += YACC=$(SOURCE_ROOT)/prebuilts/build-tools/$(HOST_OS)-$(HOST_2ND_ARCH)/bin/bison
+TARGET_KERNEL_MAKE_ENV += LZ4=$(SOURCE_ROOT)/prebuilts/kernel-build-tools/linux-x86/bin/lz4
+TARGET_KERNEL_MAKE_ENV += PAHOLE=$(SOURCE_ROOT)/prebuilts/kernel-build-tools/linux-x86/bin/pahole
 
 BUILD_CONFIG := $(TARGET_KERNEL_SOURCE)/build.config.common
 CLANG_VERSION := $(shell IFS="/"; while read LINE; do if [[ $$LINE == *"CLANG_PREBUILT_BIN"* ]]; then read -ra CLANG <<< "$$LINE"; for VERSION in "$${CLANG[@]}"; do if [[ $$VERSION == *"clang-"* ]]; then echo "$$VERSION"; fi; done; fi; done < $(BUILD_CONFIG))
