@@ -24,6 +24,9 @@
 
 set -e
 
+export KBUILD_BUILD_USER=build-user
+export KBUILD_BUILD_HOST=build-host
+
 export ROOT_DIR=$(readlink -f $(dirname $0)/../../..)
 export MAKE_ARGS=$@
 export COMMON_OUT_DIR=$(readlink -m ${OUT_DIR:-${ROOT_DIR}/out/${BRANCH}})
